@@ -29,15 +29,17 @@ public class StringSetImpl implements StringSet {
         }
 
         boolean insertedBelow = characters.get(firstChar).add(element.substring(1));
-        if (inserted || insertedBelow)
+        if (inserted || insertedBelow) {
             size++;
+        }
         return inserted || insertedBelow;
     }
 
     @Override
     public boolean contains(String element) {
-        if (element.length() == 0)
+        if (element.length() == 0) {
             return hasElement;
+        }
 
         char firstChar = element.charAt(0);
         StringSetImpl insertNode = characters.get(firstChar);
@@ -56,12 +58,14 @@ public class StringSetImpl implements StringSet {
         }
 
         char firstChar = element.charAt(0);
-        if (!characters.containsKey(firstChar))
+        if (!characters.containsKey(firstChar)) {
             return false;
+        }
 
         boolean removed = characters.get(firstChar).remove(element.substring(1));
-        if (removed)
+        if (removed) {
             size--;
+        }
         return removed;
     }
 
@@ -72,15 +76,18 @@ public class StringSetImpl implements StringSet {
 
     @Override
     public int howManyStartsWithPrefix(String prefix) {
-        if (prefix.length() == 0)
+        if (prefix.length() == 0) {
             return size();
+        }
 
         char firstChar = prefix.charAt(0);
-        if (!characters.containsKey(firstChar))
+        if (!characters.containsKey(firstChar)) {
             return 0;
+        }
 
-        if (prefix.length() == 1)
+        if (prefix.length() == 1) {
             return characters.get(firstChar).size();
+        }
         return characters.get(firstChar).howManyStartsWithPrefix(prefix.substring(1));
     }
 }
