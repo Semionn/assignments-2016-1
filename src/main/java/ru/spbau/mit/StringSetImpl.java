@@ -16,9 +16,12 @@ public class StringSetImpl implements StringSet {
     @Override
     public boolean add(String element) {
         if (element.length() == 0) {
-            hasElement = true;
-            size++;
-            return true;
+            if (!hasElement) {
+                hasElement = true;
+                size++;
+                return true;
+            }
+            return false;
         }
 
         char firstChar = element.charAt(0);
@@ -74,7 +77,7 @@ public class StringSetImpl implements StringSet {
 
     @Override
     public int size() {
-        return characters.size();
+        return size;
     }
 
     @Override
