@@ -65,7 +65,7 @@ public class StringSetImpl implements StringSet {
         boolean removed = characters.get(firstChar).remove(element.substring(1));
         if (removed) {
             size--;
-            if (characters.get(firstChar).size() == 0) {
+            if (characters.get(firstChar).size == 0) {
                 characters.remove(firstChar);
             }
         }
