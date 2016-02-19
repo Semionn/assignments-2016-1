@@ -80,7 +80,7 @@ public class StringSetImpl implements StringSet {
     @Override
     public int howManyStartsWithPrefix(String prefix) {
         if (prefix.length() == 0) {
-            return size();
+            return size;
         }
 
         char firstChar = prefix.charAt(0);
@@ -89,7 +89,7 @@ public class StringSetImpl implements StringSet {
         }
 
         if (prefix.length() == 1) {
-            return characters.get(firstChar).size();
+            return characters.get(firstChar).size;
         }
         return characters.get(firstChar).howManyStartsWithPrefix(prefix.substring(1));
     }
