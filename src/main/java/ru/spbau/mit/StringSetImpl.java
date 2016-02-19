@@ -74,7 +74,7 @@ public class StringSetImpl implements StringSet {
 
     @Override
     public int size() {
-        return size;
+        return characters.size();
     }
 
     @Override
