@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-public class CP {
+public final class CP {
 
     public static void copyFile(String fromFileName, String toFileName, int bufferSize) {
         File fileFrom = new File(fromFileName);
@@ -28,10 +28,11 @@ public class CP {
             RandomAccessFile fileToWrite = new RandomAccessFile(fileTo, "rw");
             do {
                 int readSize = fileFromRead.read(buffer);
-                if (readSize > 0)
+                if (readSize > 0) {
                     fileToWrite.write(buffer, 0, readSize);
-                else
+                } else {
                     break;
+                }
             } while (true);
         } catch (IOException e) {
             e.printStackTrace();
@@ -39,6 +40,8 @@ public class CP {
     }
 
     static final int BUF_SIZE = 4096;
+
+    private CP() { }
 
     public static void main(String[] args) {
         if (args.length < 2) {
