@@ -1,10 +1,8 @@
 package ru.spbau.mit;
 
-import java.io.*;
 import java.util.HashMap;
-import java.util.Map;
 
-public class StringSetImpl implements StringSet, StreamSerializable {
+public class StringSetImpl implements StringSet {
 
     private HashMap<Character, StringSetImpl> characters;
     private int size;
@@ -58,7 +56,7 @@ public class StringSetImpl implements StringSet, StreamSerializable {
         }
         return nextNode.traverse(element, position + 1);
     }
-
+    
     @Override
     public boolean remove(String element) {
         boolean result = contains(element);
@@ -97,44 +95,4 @@ public class StringSetImpl implements StringSet, StreamSerializable {
         return resultNode.size();
     }
 
-    @Override
-    public void serialize(OutputStream out) {
-        serializeNode(new DataOutputStream(out));
-    }
-
-    private void serializeNode(DataOutputStream dataOutputStream) {
-        try {
-            dataOutputStream.writeBoolean(hasElement);
-            dataOutputStream.writeInt(size);
-            dataOutputStream.writeInt(characters.size());
-            for (Map.Entry<Character, StringSetImpl> entry : characters.entrySet()) {
-                dataOutputStream.writeChar(entry.getKey());
-                entry.getValue().serializeNode(dataOutputStream);
-            }
-        } catch (IOException e) {
-            throw new SerializationException();
-        }
-    }
-
-    @Override
-    public void deserialize(InputStream in) {
-        deserializeNode(new DataInputStream(in));
-    }
-
-    private void deserializeNode(DataInputStream dataInputStream) {
-        try {
-            hasElement = dataInputStream.readBoolean();
-            size = dataInputStream.readInt();
-            characters.clear();
-            int characterSize = dataInputStream.readInt();
-            for (int i = 0; i < characterSize; i++) {
-                char c = dataInputStream.readChar();
-                StringSetImpl newNode = new StringSetImpl();
-                characters.put(c, newNode);
-                newNode.deserializeNode(dataInputStream);
-            }
-        } catch (IOException e) {
-            throw new SerializationException();
-        }
-    }
 }
