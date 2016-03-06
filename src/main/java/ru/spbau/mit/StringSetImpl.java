@@ -15,7 +15,11 @@ public class StringSetImpl implements StringSet {
 
     @Override
     public boolean add(String element) {
-        if (element.length() == 0) {
+        return add(element, 0);
+    }
+
+    private boolean add(String element, int position) {
+        if (element.length() == position) {
             if (!hasElement) {
                 hasElement = true;
                 size++;
@@ -24,14 +28,14 @@ public class StringSetImpl implements StringSet {
             return false;
         }
 
-        char firstChar = element.charAt(0);
+        char substrChar = element.charAt(position);
         boolean inserted = false;
-        if (!characters.containsKey(firstChar)) {
-            characters.put(firstChar, new StringSetImpl());
+        if (!characters.containsKey(substrChar)) {
+            characters.put(substrChar, new StringSetImpl());
             inserted = true;
         }
 
-        boolean insertedBelow = characters.get(firstChar).add(element.substring(1));
+        boolean insertedBelow = characters.get(substrChar).add(element, position + 1);
         if (inserted || insertedBelow) {
             size++;
         }
@@ -40,18 +44,26 @@ public class StringSetImpl implements StringSet {
 
     @Override
     public boolean contains(String element) {
-        if (element.length() == 0) {
+        return contains(element, 0);
+    }
+
+    private boolean contains(String element, int position) {
+        if (element.length() == position) {
             return hasElement;
         }
 
-        char firstChar = element.charAt(0);
-        StringSetImpl insertNode = characters.get(firstChar);
-        return insertNode != null && insertNode.contains(element.substring(1));
+        char substrChar = element.charAt(position);
+        StringSetImpl insertNode = characters.get(substrChar);
+        return insertNode != null && insertNode.contains(element, position + 1);
     }
 
     @Override
     public boolean remove(String element) {
-        if (element.length() == 0) {
+        return remove(element, 0);
+    }
+
+    private boolean remove(String element, int position) {
+        if (element.length() == position) {
             if (hasElement) {
                 size--;
                 hasElement = false;
@@ -60,16 +72,16 @@ public class StringSetImpl implements StringSet {
             return false;
         }
 
-        char firstChar = element.charAt(0);
-        if (!characters.containsKey(firstChar)) {
+        char substrChar = element.charAt(position);
+        if (!characters.containsKey(substrChar)) {
             return false;
         }
 
-        boolean removed = characters.get(firstChar).remove(element.substring(1));
+        boolean removed = characters.get(substrChar).remove(element, position + 1);
         if (removed) {
             size--;
-            if (characters.get(firstChar).size == 0) {
-                characters.remove(firstChar);
+            if (characters.get(substrChar).size == 0) {
+                characters.remove(substrChar);
             }
         }
         return removed;
@@ -82,18 +94,22 @@ public class StringSetImpl implements StringSet {
 
     @Override
     public int howManyStartsWithPrefix(String prefix) {
-        if (prefix.length() == 0) {
+        return howManyStartsWithPrefix(prefix, 0);
+    }
+
+    private int howManyStartsWithPrefix(String prefix, int position) {
+        if (prefix.length() == position) {
             return size;
         }
 
-        char firstChar = prefix.charAt(0);
-        if (!characters.containsKey(firstChar)) {
+        char substrChar = prefix.charAt(position);
+        if (!characters.containsKey(substrChar)) {
             return 0;
         }
 
-        if (prefix.length() == 1) {
-            return characters.get(firstChar).size;
+        if (prefix.length() - position == 1) {
+            return characters.get(substrChar).size;
         }
-        return characters.get(firstChar).howManyStartsWithPrefix(prefix.substring(1));
+        return characters.get(substrChar).howManyStartsWithPrefix(prefix, position + 1);
     }
 }
