@@ -94,5 +94,4 @@ public class StringSetImpl implements StringSet {
         }
         return resultNode.size();
     }
-
 }
