@@ -62,8 +62,9 @@ public class StringSetImpl implements StringSet, StreamSerializable {
     @Override
     public boolean remove(String element) {
         boolean result = contains(element);
-        if (result)
+        if (result) {
             remove(element, 0);
+        }
         return result;
     }
 
