@@ -15,76 +15,70 @@ public class StringSetImpl implements StringSet {
 
     @Override
     public boolean add(String element) {
-        return add(element, 0);
+        boolean result = !contains(element);
+        if (result) {
+            add(element, 0);
+        }
+        return result;
     }
 
-    private boolean add(String element, int position) {
+    private void add(String element, int position) {
         if (element.length() == position) {
-            if (!hasElement) {
-                hasElement = true;
-                size++;
-                return true;
-            }
-            return false;
+            hasElement = true;
+            size++;
+            return;
         }
 
         char substrChar = element.charAt(position);
-        boolean inserted = false;
         if (!characters.containsKey(substrChar)) {
             characters.put(substrChar, new StringSetImpl());
-            inserted = true;
         }
 
-        boolean insertedBelow = characters.get(substrChar).add(element, position + 1);
-        if (inserted || insertedBelow) {
-            size++;
-        }
-        return inserted || insertedBelow;
+        characters.get(substrChar).add(element, position + 1);
+        size++;
     }
 
     @Override
     public boolean contains(String element) {
-        return contains(element, 0);
+        StringSetImpl resultNode = traverse(element, 0);
+        return resultNode != null && resultNode.hasElement;
     }
 
-    private boolean contains(String element, int position) {
+    private StringSetImpl traverse(String element, int position) {
         if (element.length() == position) {
-            return hasElement;
+            return this;
         }
 
         char substrChar = element.charAt(position);
-        StringSetImpl insertNode = characters.get(substrChar);
-        return insertNode != null && insertNode.contains(element, position + 1);
+        StringSetImpl nextNode = characters.get(substrChar);
+        if (nextNode == null) {
+            return null;
+        }
+        return nextNode.traverse(element, position + 1);
     }
 
     @Override
     public boolean remove(String element) {
-        return remove(element, 0);
+        boolean result = contains(element);
+        if (result) {
+            remove(element, 0);
+        }
+        return result;
     }
 
-    private boolean remove(String element, int position) {
+    private void remove(String element, int position) {
         if (element.length() == position) {
-            if (hasElement) {
-                size--;
-                hasElement = false;
-                return true;
-            }
-            return false;
+            size--;
+            hasElement = false;
+            return;
         }
 
         char substrChar = element.charAt(position);
-        if (!characters.containsKey(substrChar)) {
-            return false;
+        characters.get(substrChar).remove(element, position + 1);
+        size--;
+        if (characters.get(substrChar).size == 0) {
+            characters.remove(substrChar);
         }
-
-        boolean removed = characters.get(substrChar).remove(element, position + 1);
-        if (removed) {
-            size--;
-            if (characters.get(substrChar).size == 0) {
-                characters.remove(substrChar);
-            }
-        }
-        return removed;
     }
 
     @Override
@@ -94,22 +88,11 @@ public class StringSetImpl implements StringSet {
 
     @Override
     public int howManyStartsWithPrefix(String prefix) {
-        return howManyStartsWithPrefix(prefix, 0);
-    }
-
-    private int howManyStartsWithPrefix(String prefix, int position) {
-        if (prefix.length() == position) {
-            return size;
-        }
-
-        char substrChar = prefix.charAt(position);
-        if (!characters.containsKey(substrChar)) {
+        StringSetImpl resultNode = traverse(prefix, 0);
+        if (resultNode == null) {
             return 0;
         }
-
-        if (prefix.length() - position == 1) {
-            return characters.get(substrChar).size;
-        }
-        return characters.get(substrChar).howManyStartsWithPrefix(prefix, position + 1);
+        return resultNode.size();
     }
+
 }
