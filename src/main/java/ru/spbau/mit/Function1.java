@@ -1,12 +1,13 @@
 package ru.spbau.mit;
 
-public abstract class Function1<R, T> {
+public abstract class Function1<T, R> implements IFunction1<T, R> {
 
+    @Override
     public abstract R apply(T t);
 
-    public <R2> Function1<R2, T> compose(final Function1<R2, ? super R> g) {
-        final Function1<R, T> f = this;
-        return new Function1<R2, T>() {
+    public <R2> IFunction1<T, R2> compose(final IFunction1<? super R, R2> g) {
+        final Function1<T, R> f = this;
+        return new Function1<T, R2>() {
             @Override
             public R2 apply(T t) {
                 return g.apply(f.apply(t));
