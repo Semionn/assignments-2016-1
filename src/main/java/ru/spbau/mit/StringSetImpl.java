@@ -99,42 +99,42 @@ public class StringSetImpl implements StringSet, StreamSerializable {
 
     @Override
     public void serialize(OutputStream out) {
-        serializeNode(new DataOutputStream(out));
-    }
-
-    private void serializeNode(DataOutputStream dataOutputStream) {
         try {
-            dataOutputStream.writeBoolean(hasElement);
-            dataOutputStream.writeInt(size);
-            dataOutputStream.writeInt(characters.size());
-            for (Map.Entry<Character, StringSetImpl> entry : characters.entrySet()) {
-                dataOutputStream.writeChar(entry.getKey());
-                entry.getValue().serializeNode(dataOutputStream);
-            }
+            doSerialize(new DataOutputStream(out));
         } catch (IOException e) {
             throw new SerializationException();
         }
     }
 
-    @Override
-    public void deserialize(InputStream in) {
-        deserializeNode(new DataInputStream(in));
+    private void doSerialize(DataOutputStream dataOutputStream) throws IOException {
+        dataOutputStream.writeBoolean(hasElement);
+        dataOutputStream.writeInt(size);
+        dataOutputStream.writeInt(characters.size());
+        for (Map.Entry<Character, StringSetImpl> entry : characters.entrySet()) {
+            dataOutputStream.writeChar(entry.getKey());
+            entry.getValue().doSerialize(dataOutputStream);
+        }
     }
 
-    private void deserializeNode(DataInputStream dataInputStream) {
+    @Override
+    public void deserialize(InputStream in) {
         try {
-            hasElement = dataInputStream.readBoolean();
-            size = dataInputStream.readInt();
-            characters.clear();
-            int characterSize = dataInputStream.readInt();
-            for (int i = 0; i < characterSize; i++) {
-                char c = dataInputStream.readChar();
-                StringSetImpl newNode = new StringSetImpl();
-                characters.put(c, newNode);
-                newNode.deserializeNode(dataInputStream);
-            }
+            doDeserialize(new DataInputStream(in));
         } catch (IOException e) {
             throw new SerializationException();
+        }
+    }
+
+    private void doDeserialize(DataInputStream dataInputStream) throws IOException {
+        hasElement = dataInputStream.readBoolean();
+        size = dataInputStream.readInt();
+        characters.clear();
+        int characterSize = dataInputStream.readInt();
+        for (int i = 0; i < characterSize; i++) {
+            char c = dataInputStream.readChar();
+            StringSetImpl newNode = new StringSetImpl();
+            characters.put(c, newNode);
+            newNode.doDeserialize(dataInputStream);
         }
     }
 }
