@@ -16,21 +16,21 @@ public class CollectionsTest {
     private final int sum = 45;
     private final int divisor = 2;
 
-    private Predicate<Number> predicate = new Predicate<Number>() {
+    private final Predicate<Number> predicate = new Predicate<Number>() {
         @Override
         public Boolean apply(Number b) {
             return b.intValue() < threshold;
         }
     };
 
-    private Function1<Number, Double> func = new Function1<Number, Double>() {
+    private final Function1<Number, Double> func = new Function1<Number, Double>() {
         @Override
         public Double apply(Number base) {
             return (double) base.intValue() / divisor;
         }
     };
 
-    private Function2<Integer, Number, Integer> func2 = new Function2<Integer, Number, Integer>() {
+    private final Function2<Integer, Number, Integer> func2 = new Function2<Integer, Number, Integer>() {
         @Override
         public Integer apply(Integer number, Number base) {
             return base.intValue() + number;

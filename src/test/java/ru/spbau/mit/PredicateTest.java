@@ -9,21 +9,21 @@ public class PredicateTest {
     private final int checkNum = 42;
     private final int checkNum2 = 0;
 
-    private Predicate<Integer> predicate = new Predicate<Integer>() {
+    private final Predicate<Integer> predicate = new Predicate<Integer>() {
         @Override
         public Boolean apply(Integer num) {
             return num == checkNum;
         }
     };
 
-    private Predicate<Integer> predicate2 = new Predicate<Integer>() {
+    private final Predicate<Integer> predicate2 = new Predicate<Integer>() {
         @Override
         public Boolean apply(Integer num) {
             return num > checkNum2;
         }
     };
 
-    private Predicate<Integer> predicateNull = new Predicate<Integer>() {
+    private final Predicate<Integer> predicateNull = new Predicate<Integer>() {
         @Override
         public Boolean apply(Integer num) {
             return num == null;

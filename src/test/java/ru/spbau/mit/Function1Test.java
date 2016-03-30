@@ -8,14 +8,14 @@ public class Function1Test {
 
     private final int testNum = 42;
 
-    private Function1<Integer, Integer> func = new Function1<Integer, Integer>() {
+    private final Function1<Integer, Integer> func = new Function1<Integer, Integer>() {
         @Override
         public Integer apply(Integer number) {
             return number;
         }
     };
 
-    private Function1<Number, Integer> func2 = new Function1<Number, Integer>() {
+    private final Function1<Number, Integer> func2 = new Function1<Number, Integer>() {
         @Override
         public Integer apply(Number number) {
             return number.intValue();

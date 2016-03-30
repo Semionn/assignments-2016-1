@@ -15,14 +15,14 @@ public class Function2Test {
     private final int secondArg2 = 2;
     private final int answer2 = firstArg2 - secondArg2;
 
-    private Function2<Integer, Integer, Integer> func = new Function2<Integer, Integer, Integer>() {
+    private final Function2<Integer, Integer, Integer> func = new Function2<Integer, Integer, Integer>() {
         @Override
         public Integer apply(Integer a, Integer b) {
             return a * a + b * b;
         }
     };
 
-    private Function2<Integer, Integer, Integer> func2 = new Function2<Integer, Integer, Integer>() {
+    private final Function2<Integer, Integer, Integer> func2 = new Function2<Integer, Integer, Integer>() {
         @Override
         public Integer apply(Integer number1, Integer number2) {
             return number1 - number2;
