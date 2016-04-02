@@ -15,14 +15,16 @@ public class Function2Test {
     private static final int SECOND_ARG_2 = 2;
     private static final int ANSWER_2 = FIRST_ARG_2 - SECOND_ARG_2;
 
-    private static final Function2<Integer, Integer, Integer> SQUARES_SUM_FUNC = new Function2<Integer, Integer, Integer>() {
+    private static final Function2<Integer, Integer, Integer> SQUARES_SUM_FUNC
+            = new Function2<Integer, Integer, Integer>() {
         @Override
         public Integer apply(Integer a, Integer b) {
             return a * a + b * b;
         }
     };
 
-    private static final Function2<Integer, Integer, Integer> DIFF_FUNC = new Function2<Integer, Integer, Integer>() {
+    private static final Function2<Integer, Integer, Integer> DIFF_FUNC
+            = new Function2<Integer, Integer, Integer>() {
         @Override
         public Integer apply(Integer number1, Integer number2) {
             return number1 - number2;
