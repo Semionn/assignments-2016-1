@@ -6,52 +6,53 @@ import static org.junit.Assert.*;
 
 public class PredicateTest {
 
-    private final int checkNum = 42;
-    private final int checkNum2 = 0;
+    private static final int CHECK_NUM_1 = 42;
+    private static final int CHECK_NUM_2 = 0;
 
-    private final Predicate<Integer> predicate = new Predicate<Integer>() {
+    private static final Predicate<Integer> CHECK_EQUALS_NUM1 = new Predicate<Integer>() {
         @Override
         public Boolean apply(Integer num) {
-            return num == checkNum;
+            return num == CHECK_NUM_1;
         }
     };
 
-    private final Predicate<Integer> predicate2 = new Predicate<Integer>() {
+    private static final Predicate<Integer> CHECK_EQUALS_NUM2 = new Predicate<Integer>() {
         @Override
         public Boolean apply(Integer num) {
-            return num > checkNum2;
+            return num > CHECK_NUM_2;
         }
     };
 
-    private final Predicate<Integer> predicateNull = new Predicate<Integer>() {
+    private static final Predicate<Object> CHECK_LAZY_PREDICATE = new Predicate<Object>() {
         @Override
-        public Boolean apply(Integer num) {
-            return num == null;
+        public Boolean apply(Object obj) {
+            fail("Lazy check failed");
+            return false;
         }
     };
 
     @Test
     public void testApply() throws Exception {
-        assertTrue(predicate.apply(checkNum));
+        assertTrue(CHECK_EQUALS_NUM1.apply(CHECK_NUM_1));
     }
 
     @Test
     public void testOr() throws Exception {
-        assertTrue(predicate.or(predicate2).apply(1 + checkNum));
-        assertFalse(predicate.or(predicate2).apply(checkNum2 - 1));
-        assertTrue(predicateNull.or(predicate).apply(null));
+        assertTrue(CHECK_EQUALS_NUM1.or(CHECK_EQUALS_NUM2).apply(1 + CHECK_NUM_1));
+        assertFalse(CHECK_EQUALS_NUM1.or(CHECK_EQUALS_NUM2).apply(CHECK_NUM_2 - 1));
+        assertTrue(CHECK_EQUALS_NUM1.or(CHECK_LAZY_PREDICATE).apply(CHECK_NUM_1));
     }
 
     @Test
     public void testAnd() throws Exception {
-        assertTrue(predicate.and(predicate2).apply(checkNum));
-        assertFalse(predicate.and(predicate2).apply(-checkNum));
-        assertFalse(predicateNull.not().and(predicate).apply(null));
+        assertTrue(CHECK_EQUALS_NUM1.and(CHECK_EQUALS_NUM2).apply(CHECK_NUM_1));
+        assertFalse(CHECK_EQUALS_NUM1.and(CHECK_EQUALS_NUM2).apply(-CHECK_NUM_1));
+        assertFalse(CHECK_EQUALS_NUM1.not().and(CHECK_LAZY_PREDICATE).apply(CHECK_NUM_1));
     }
 
     @Test
     public void testNot() throws Exception {
-        assertFalse(predicate.not().apply(checkNum));
+        assertFalse(CHECK_EQUALS_NUM1.not().apply(CHECK_NUM_1));
     }
 
     @Test
@@ -66,8 +67,8 @@ public class PredicateTest {
             }
         };
 
-        assertTrue(predicate.compose(func).apply(checkNum) == 1);
-        assertTrue(predicate.compose(func).apply(-checkNum) == 0);
+        assertTrue(CHECK_EQUALS_NUM1.compose(func).apply(CHECK_NUM_1) == 1);
+        assertTrue(CHECK_EQUALS_NUM1.compose(func).apply(-CHECK_NUM_1) == 0);
     }
 
     @Test

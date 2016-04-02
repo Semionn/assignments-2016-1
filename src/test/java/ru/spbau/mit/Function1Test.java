@@ -6,16 +6,16 @@ import static org.junit.Assert.*;
 
 public class Function1Test {
 
-    private final int testNum = 42;
+    private static final int TEST_NUM = 42;
 
-    private final Function1<Integer, Integer> func = new Function1<Integer, Integer>() {
+    private static final Function1<Integer, Integer> IDENTITY_FUNC = new Function1<Integer, Integer>() {
         @Override
         public Integer apply(Integer number) {
             return number;
         }
     };
 
-    private final Function1<Number, Integer> func2 = new Function1<Number, Integer>() {
+    private static final Function1<Number, Integer> GET_INTEGER_FUNC = new Function1<Number, Integer>() {
         @Override
         public Integer apply(Number number) {
             return number.intValue();
@@ -25,12 +25,12 @@ public class Function1Test {
     @Test
     public void testApply() throws Exception {
         final int testNum2 = 0;
-        assertTrue(func.apply(testNum2) == testNum2);
-        assertTrue((func2.apply(testNum)) == testNum);
+        assertTrue(IDENTITY_FUNC.apply(testNum2) == testNum2);
+        assertTrue((GET_INTEGER_FUNC.apply(TEST_NUM)) == TEST_NUM);
     }
 
     @Test
     public void testCompose() throws Exception {
-        assertTrue(func.compose(func2).apply(testNum) == testNum);
+        assertTrue(IDENTITY_FUNC.compose(GET_INTEGER_FUNC).apply(TEST_NUM) == TEST_NUM);
     }
 }
