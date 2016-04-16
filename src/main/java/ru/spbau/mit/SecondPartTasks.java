@@ -3,6 +3,7 @@ package ru.spbau.mit;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -48,14 +49,10 @@ public final class SecondPartTasks {
     // Надо вычислить, чья общая длина произведений наибольшая.
     public static String findPrinter(Map<String, List<String>> compositions) {
         return compositions.entrySet().stream()
-                .collect(Collectors.groupingBy(Map.Entry::getKey,
-                        Collectors.summingInt(value -> value.getValue().stream()
-                                .mapToInt(String::length)
-                                .max()
-                                .orElse(0))))
-                .entrySet()
-                .stream()
-                .max((entry1, entry2) -> entry1.getValue().compareTo(entry2.getValue()))
+                .max(Comparator.comparing(entry -> entry.getValue().stream()
+                        .mapToInt(String::length)
+                        .max()
+                        .orElse(0)))
                 .get()
                 .getKey();
     }
