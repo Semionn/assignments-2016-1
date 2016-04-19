@@ -15,6 +15,8 @@ public final class Injector {
     public static Object initialize(String rootClassName, List<String> implementationClassNames) throws Exception {
         Map<String, Object> createdClasses = new HashMap<>();
         Set<String> resolvingClasses = new HashSet<>();
+        List<String> implementationClassNamesCopy = new ArrayList<>(implementationClassNames);
+        implementationClassNamesCopy.add(rootClassName);
         return resolve(rootClassName, implementationClassNames, createdClasses, resolvingClasses);
     }
 
