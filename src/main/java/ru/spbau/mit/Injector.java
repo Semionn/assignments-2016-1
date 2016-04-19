@@ -38,7 +38,7 @@ public final class Injector {
 
         Constructor<?> constructor = Class.forName(className).getConstructors()[0];
         List<Object> constructorArgs = new ArrayList<>();
-        for (String depImpl : getConstructorDependencies(constructor, implementationClassNames)) {
+        for (String depImpl : getConstrDependencies(constructor, implementationClassNames, resolvingClasses)) {
             constructorArgs.add(resolve(depImpl, implementationClassNames, createdClasses, resolvingClasses));
         }
         result = constructor.newInstance(constructorArgs.toArray());
@@ -48,13 +48,19 @@ public final class Injector {
         return result;
     }
 
-    private static List<String> getConstructorDependencies(Constructor<?> constructor,
-                                                           List<String> implementationClassNames)
-            throws ClassNotFoundException, AmbiguousImplementationException, ImplementationNotFoundException {
+    private static List<String> getConstrDependencies(Constructor<?> constructor,
+                                                      List<String> implementationClassNames,
+                                                      Set<String> resolvingClasses)
+            throws Exception {
         Class<?>[] parameters = constructor.getParameterTypes();
         List<String> dependencyClasses = new ArrayList<>();
         for (Class<?> depClass : parameters) {
             String depClassName = null;
+
+            if (resolvingClasses.contains(depClass.getCanonicalName())) {
+                throw new InjectionCycleException();
+            }
+
             for (String implementedClassName : implementationClassNames) {
                 Class implementedClass = Class.forName(implementedClassName);
                 if (depClass.isAssignableFrom(implementedClass)) {
