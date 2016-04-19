@@ -15,13 +15,13 @@ public final class Injector {
     public static Object initialize(String rootClassName, List<String> implementationClassNames) throws Exception {
         Map<String, Object> createdClasses = new HashMap<>();
         Set<String> resolvingClasses = new HashSet<>();
-        List<String> implementationClassNamesCopy = new ArrayList<>(implementationClassNames);
-        implementationClassNamesCopy.add(rootClassName);
-        return resolve(rootClassName, implementationClassNames, createdClasses, resolvingClasses);
+        Class<?> rootClass = Class.forName(rootClassName);
+        return resolve(rootClassName, implementationClassNames, createdClasses, resolvingClasses, rootClass);
     }
 
     private static Object resolve(String className, List<String> implementationClassNames,
-                                  Map<String, Object> createdClasses, Set<String> resolvingClasses)
+                                  Map<String, Object> createdClasses, Set<String> resolvingClasses,
+                                  Class<?> rootClass)
             throws Exception {
         if (resolvingClasses.contains(className)) {
             throw new InjectionCycleException();
@@ -40,8 +40,10 @@ public final class Injector {
 
         Constructor<?> constructor = Class.forName(className).getConstructors()[0];
         List<Object> constructorArgs = new ArrayList<>();
-        for (String depImpl : getConstrDependencies(constructor, implementationClassNames, resolvingClasses)) {
-            constructorArgs.add(resolve(depImpl, implementationClassNames, createdClasses, resolvingClasses));
+        for (String depImpl : getConstrDependencies(constructor, implementationClassNames, resolvingClasses,
+                rootClass)) {
+            constructorArgs.add(resolve(depImpl, implementationClassNames, createdClasses, resolvingClasses,
+                    rootClass));
         }
         result = constructor.newInstance(constructorArgs.toArray());
         resolvingClasses.remove(className);
@@ -52,7 +54,8 @@ public final class Injector {
 
     private static List<String> getConstrDependencies(Constructor<?> constructor,
                                                       List<String> implementationClassNames,
-                                                      Set<String> resolvingClasses)
+                                                      Set<String> resolvingClasses,
+                                                      Class<?> rootClass)
             throws Exception {
         Class<?>[] parameters = constructor.getParameterTypes();
         List<String> dependencyClasses = new ArrayList<>();
@@ -74,6 +77,9 @@ public final class Injector {
                 }
             }
             if (depClassName == null) {
+                if (depClass.isAssignableFrom(rootClass)) {
+                    throw new InjectionCycleException();
+                }
                 throw new ImplementationNotFoundException();
             }
             dependencyClasses.add(depClassName);
