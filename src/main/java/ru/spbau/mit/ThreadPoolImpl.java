@@ -86,7 +86,15 @@ public class ThreadPoolImpl implements ThreadPool {
                         lightFuture.notifyAll();
                     }
                 }
-            } catch (InterruptedException e) { }
+            } catch (Exception e) {
+                if (lightFuture != null) {
+                    synchronized (lightFuture) {
+                        lightFuture.setTaskException(e);
+                        lightFuture.setReady(true);
+                        lightFuture.notifyAll();
+                    }
+                }
+            }
         }
     }
 
@@ -110,6 +118,10 @@ public class ThreadPoolImpl implements ThreadPool {
 
         public void setReady(boolean ready) {
             this.ready = ready;
+        }
+
+        public void setTaskException(Throwable taskException) {
+            this.taskException = taskException;
         }
 
         @Override
@@ -147,8 +159,8 @@ public class ThreadPoolImpl implements ThreadPool {
                     return f.apply(firstRes);
                 } catch (LightExecutionException | InterruptedException e) {
                     taskException = e;
+                    throw new RuntimeException(e);
                 }
-                return null;
             });
             addFeature(result);
             return result;
