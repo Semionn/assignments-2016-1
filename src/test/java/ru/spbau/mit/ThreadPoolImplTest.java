@@ -4,6 +4,9 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.function.Function;
 
 import static org.junit.Assert.*;
 
@@ -15,9 +18,8 @@ public class ThreadPoolImplTest {
     private static final int THREAD_CNT = 10;
     private static final int TASK_CNT = 1000;
     private static final int TEST_STABLE_CNT = 100;
-    private static final int TASK_RESULT = 42;
-    private static final int EXTRA_TASK_CNT = 10;
     private static final int SLEEP_TIME = 10;
+    private static final int WAIT_TIME = 1000;
 
     @Test
     public void testSubmit() throws Exception {
@@ -38,22 +40,30 @@ public class ThreadPoolImplTest {
                 assertTrue(res2.equals(k * 2));
                 k++;
             }
+            threadPool.shutdown();
         }
     }
 
     @Test
     public void testShutdown() throws Exception {
-        for (int testNum = 0; testNum < TEST_STABLE_CNT; testNum++) {
+        for (int testNum = 0; testNum < 1; testNum++) {
             final ThreadPool threadPool = new ThreadPoolImpl(THREAD_CNT);
-            final LightFuture<Integer> firstTask = threadPool.submit(() -> TASK_RESULT);
-            threadPool.shutdown();
-            for (int j = 0; j < EXTRA_TASK_CNT; j++) {
-                assertTrue(threadPool.submit(() -> 0) == null);
+
+            final List<LightFuture<Integer>> futures = new ArrayList<>();
+            for (int i = 0; i < TASK_CNT; i++) {
+                LightFuture<Integer> future = threadPool.submit(() -> 0);
+                futures.add(future);
             }
-            try {
-                Integer result = firstTask.get();
-                assertTrue(firstTask.isReady() && result == TASK_RESULT);
-            } catch (InterruptedException e) { }
+            threadPool.shutdown();
+            for (int i = 0; i < TASK_CNT; i++) {
+                LightFuture<Integer> future = threadPool.submit(() -> 0);
+                assertTrue(future == null);
+            }
+
+            for (LightFuture<Integer> future : futures) {
+                waitFuture(future, WAIT_TIME);
+                assertTrue(future.isReady());
+            }
         }
     }
 
@@ -77,7 +87,6 @@ public class ThreadPoolImplTest {
 
             assertEquals(1, (int) task.get());
             assertTrue(task.isReady());
-            assertFalse(taskThen.isReady());
             assertFalse(taskDoubleThen.isReady());
 
             assertEquals(2, (int) taskThen.get());
@@ -85,6 +94,60 @@ public class ThreadPoolImplTest {
 
             assertEquals(0, (int) taskDoubleThen.get());
             assertTrue(taskDoubleThen.isReady());
+            threadPool.shutdown();
+        }
+    }
+
+    @Test
+    public void testThenApplyOptimize() throws InterruptedException {
+        final ThreadPool threadPool = new ThreadPoolImpl(2);
+        final LightFuture<Integer> task = threadPool.submit(() -> {
+            while (true) { }
+        });
+        task.thenApply(Function.identity());
+        final LightFuture<Boolean> task2 = threadPool.submit(() -> true);
+        waitFuture(task2, WAIT_TIME);
+        assertTrue(task2.isReady());
+        threadPool.shutdown();
+    }
+
+    @Test
+    public void testThreadCount() throws InterruptedException {
+        final ThreadPool threadPool = new ThreadPoolImpl(THREAD_CNT);
+        final CyclicBarrier barrier = new CyclicBarrier(THREAD_CNT);
+        final List<LightFuture<Integer>> futures = new ArrayList<>();
+        for (int i = 0; i < THREAD_CNT; i++) {
+            futures.add(threadPool.submit(() -> {
+                try {
+                    barrier.await();
+                } catch (InterruptedException | BrokenBarrierException e) {
+                    throw new RuntimeException(e);
+                }
+                return 0;
+            }));
+        }
+        for (LightFuture<Integer> future : futures) {
+            waitFuture(future, WAIT_TIME);
+            assertTrue(future.isReady());
+        }
+        threadPool.shutdown();
+    }
+
+    private void waitFuture(LightFuture<?> future, long timeout) throws InterruptedException {
+        if (!future.isReady()) {
+            Runnable taskWait = () -> {
+                try {
+                    future.get();
+                    synchronized (this) {
+                        notify();
+                    }
+                } catch (LightExecutionException | InterruptedException e) {
+                }
+            };
+            new Thread(taskWait).start();
+            synchronized (taskWait) {
+                taskWait.wait(timeout);
+            }
         }
     }
 }

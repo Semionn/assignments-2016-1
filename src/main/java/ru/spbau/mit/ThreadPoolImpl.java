@@ -1,6 +1,5 @@
 package ru.spbau.mit;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -8,120 +7,97 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ThreadPoolImpl implements ThreadPool {
-    private final Queue<ThreadWorker> freeWorkers;
-    private final Queue<LightFutureImpl> futures;
-    private final Runnable tasksManager;
-    private volatile boolean stopped;
+    private final List<Thread> threads = new LinkedList<>();
+    private Queue<LightFutureImpl> futures = new LinkedList<>();
+    private volatile boolean stopped = false;
 
     public ThreadPoolImpl(int n) {
-        stopped = false;
-        freeWorkers = new LinkedList<>();
-        futures = new LinkedList<>();
-        List<Thread> threads = new ArrayList<>();
-        List<ThreadWorker> threadWorkers = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            ThreadWorker threadWorker = new ThreadWorker();
-            threadWorkers.add(threadWorker);
-            threads.add(new Thread(threadWorker));
+            Thread newThread = new Thread(new ThreadWorker());
+            threads.add(newThread);
+            newThread.start();
         }
-        tasksManager = new TasksManager(threads, threadWorkers);
-        new Thread(tasksManager).start();
-        threads.forEach(Thread::start);
     }
 
     @Override
     public <R> LightFuture<R> submit(Supplier<R> supplier) {
-        LightFutureImpl<R> result = null;
         if (!stopped) {
-            result = new LightFutureImpl<>(supplier);
-            addFeature(result);
+            LightFutureImpl<R> future = new LightFutureImpl<>(supplier);
+            addFuture(future);
+            return future;
         }
-        return result;
+        return null;
     }
 
     @Override
-    public void shutdown() {
-        synchronized (tasksManager) {
-            stopped = true;
-            tasksManager.notifyAll();
+    public synchronized void shutdown() {
+        stopped = true;
+        while (futures.size() != 0) {
+            try {
+                wait();
+            } catch (InterruptedException e) { }
         }
+
+        threads.forEach(Thread::interrupt);
     }
 
-    private void addFeature(LightFutureImpl future) {
-        synchronized (tasksManager) {
-            synchronized (futures) {
-                futures.add(future);
-            }
-            tasksManager.notifyAll();
+    private synchronized void addFuture(LightFutureImpl future) {
+        futures.add(future);
+        notify();
+    }
+
+    private synchronized <R> LightFutureImpl<R> peekFuture() throws InterruptedException {
+        while (futures.size() == 0) {
+            wait();
         }
+
+        LightFutureImpl<R> future = futures.peek();
+        futures.poll();
+
+        if (futures.size() == 0 && stopped) {
+            notifyAll();
+        }
+
+        return future;
     }
 
     private final class ThreadWorker implements Runnable {
-        private LightFutureImpl lightFuture;
-
-        ThreadWorker() {
-        }
-
-        public void setLightFuture(LightFutureImpl lightFuture) {
-            this.lightFuture = lightFuture;
-        }
-
         @Override
         public void run() {
             try {
                 while (!Thread.interrupted()) {
-                    synchronized (this) {
-                        synchronized (tasksManager) {
-                            synchronized (freeWorkers) {
-                                freeWorkers.add(this);
-                                tasksManager.notifyAll();
-                            }
-                        }
-                        wait();
-                    }
-                    Object res = lightFuture.getTask().get();
-                    synchronized (lightFuture) {
-                        lightFuture.setResult(res);
-                        lightFuture.setReady(true);
-                        lightFuture.notifyAll();
+                    LightFutureImpl future = ThreadPoolImpl.this.peekFuture();
+                    future.run();
+                    synchronized (future) {
+                        future.notifyAll();
                     }
                 }
-            } catch (Exception e) {
-                if (lightFuture != null) {
-                    synchronized (lightFuture) {
-                        lightFuture.setTaskException(e);
-                        lightFuture.setReady(true);
-                        lightFuture.notifyAll();
-                    }
-                }
-            }
+            } catch (InterruptedException e) { }
         }
     }
 
     private final class LightFutureImpl<R> implements LightFuture<R> {
         private volatile R result = null;
         private volatile boolean ready = false;
-        private final Supplier<R> supplier;
+        private volatile Queue<LightFutureImpl> thenApplyTasks = new LinkedList<>();
+        private final Runnable task;
         private Throwable taskException;
 
         LightFutureImpl(final Supplier<R> supplier) {
-            this.supplier = supplier;
-        }
+            task = () -> {
+                try {
+                    result = supplier.get();
+                } catch (Exception e) {
+                    taskException = e;
+                }
 
-        public Supplier<R> getTask() {
-            return supplier;
-        }
+                ready = true;
 
-        public void setResult(R result) {
-            this.result = result;
-        }
-
-        public void setReady(boolean ready) {
-            this.ready = ready;
-        }
-
-        public void setTaskException(Throwable taskException) {
-            this.taskException = taskException;
+                synchronized (this) {
+                    thenApplyTasks.forEach(ThreadPoolImpl.this::addFuture);
+                    thenApplyTasks.clear();
+                }
+            };
         }
 
         @Override
@@ -130,21 +106,14 @@ public class ThreadPoolImpl implements ThreadPool {
         }
 
         @Override
-        public R get() throws LightExecutionException, InterruptedException {
-            if (!ready) {
-                synchronized (this) {
-                    while (!ready && !stopped) {
-                        wait();
-                    }
-                }
+        public synchronized R get() throws LightExecutionException, InterruptedException {
+            while (!ready) {
+                wait();
             }
+
             if (taskException != null) {
                 throw new LightExecutionException(taskException);
             }
-            if (stopped) {
-                throw new InterruptedException();
-            }
-
             return result;
         }
 
@@ -153,7 +122,7 @@ public class ThreadPoolImpl implements ThreadPool {
             if (stopped) {
                 return null;
             }
-            LightFutureImpl<U> result = new LightFutureImpl<>(() -> {
+            LightFutureImpl<U> future = new LightFutureImpl<>(() -> {
                 try {
                     R firstRes = get();
                     return f.apply(firstRes);
@@ -162,54 +131,25 @@ public class ThreadPoolImpl implements ThreadPool {
                     throw new RuntimeException(e);
                 }
             });
-            addFeature(result);
-            return result;
-        }
-    }
 
-    private final class TasksManager implements Runnable {
-        private final List<Thread> threads;
-        private final List<ThreadWorker> threadWorkers;
-        TasksManager(List<Thread> threads, List<ThreadWorker> threadWorkers) {
-            this.threads = threads;
-            this.threadWorkers = threadWorkers;
-        }
-
-        @Override
-        public void run() {
-            try {
+            if (isReady()) {
+                addFuture(future);
+            } else {
                 synchronized (this) {
-                    while (true) {
-                        wait();
-                        if (stopped) {
-                            break;
-                        }
-                        synchronized (futures) {
-                            if (!futures.isEmpty()) {
-                                synchronized (freeWorkers) {
-                                    if (!freeWorkers.isEmpty()) {
-                                        ThreadWorker threadWorker = freeWorkers.poll();
-                                        synchronized (threadWorker) {
-                                            LightFutureImpl future = futures.poll();
-                                            threadWorker.setLightFuture(future);
-                                            threadWorker.notify();
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    if (isReady()) {
+                        addFuture(future);
+                    } else {
+                        thenApplyTasks.add(future);
                     }
-                    threads.forEach(Thread::interrupt);
-                    threadWorkers.forEach(worker -> {
-                        if (worker.lightFuture != null) {
-                            synchronized (worker.lightFuture) {
-                                worker.lightFuture.notifyAll();
-                            }
-                        }
-                    });
                 }
-            } catch (InterruptedException e) { }
+            }
+            return future;
         }
+
+        private void run() {
+            task.run();
+        }
+
     }
 
 }
